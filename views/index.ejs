@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .validator-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .card-body {
+            padding: 40px;
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 15px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-validate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-validate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .result-container {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .valid-result {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+        .invalid-result {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .check-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .check-icon {
+            font-size: 18px;
+        }
+        .check-passed {
+            color: #2ecc71;
+        }
+        .check-failed {
+            color: #e74c3c;
+        }
+        .execution-time {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: inline-block;
+        }
+        .batch-section, .file-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e9ecef;
+        }
+        .batch-results, .file-results {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .batch-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #dee2e6;
+        }
+        .batch-item.valid {
+            border-left-color: #28a745;
+        }
+        .batch-item.invalid {
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="validator-card">
+            <div class="card-header">
+                <h1 class="mb-0">
+                    <i class="fas fa-envelope-circle-check me-3"></i>
+                    Email Validator
+                </h1>
+                <p class="mb-0 mt-2">Comprehensive email validation with syntax, domain, MX, and SMTP checks</p>
+            </div>
+            <div class="card-body">
+                <!-- Single Email Validation -->
+                <form action="/validate" method="POST" id="emailForm">
+                    <div class="mb-4">
+                        <label for="email" class="form-label fw-bold">
+                            <i class="fas fa-at me-2"></i>Email Address
+                        </label>
+                        <div class="input-group">
+                            <input 
+                                type="email" 
+                                class="form-control" 
+                                id="email" 
+                                name="email" 
+                                placeholder="Enter email address to validate"
+                                value="<%= email %>"
+                                required
+                            >
+                            <button class="btn btn-validate text-white" type="submit">
+                                <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                                <i class="fas fa-search me-2"></i>Validate
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <!-- Error Display -->
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <%= error %>
+                    </div>
+                <% } %>
+                <!-- Validation Results -->
+                <% if (result) { %>
+                    <div class="result-container <%= result.isValid ? 'valid-result' : 'invalid-result' %>">
+                        <div class="text-center mb-4">
+                            <h3 class="mb-2">
+                                <% if (result.isValid) { %>
+                                    <i class="fas fa-check-circle me-2"></i>Email is VALID
+                                <% } else { %>
+                                    <i class="fas fa-times-circle me-2"></i>Email is INVALID
+                                <% } %>
+                            </h3>
+                            <p class="mb-0"><strong><%= result.email %></strong></p>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="fas fa-list-check me-2"></i>Validation Checks</h5>
+                                <% Object.entries(result.checks).forEach(([checkName, checkResult]) => { %>
+                                    <div class="check-item">
+                                        <div>
+                                            <strong><%= checkName.charAt(0).toUpperCase() + checkName.slice(1) %></strong>
+                                            <br>
+                                            <small><%= checkResult.message %></small>
+                                        </div>
+                                        <div class="check-icon <%= checkResult.passed ? 'check-passed' : 'check-failed' %>">
+                                            <i class="fas fa-<%= checkResult.passed ? 'check' : 'times' %>"></i>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Details</h5>
+                                <% if (result.checks.mx && result.checks.mx.records && result.checks.mx.records.length > 0) { %>
+                                    <div class="mb-3">
+                                        <strong>MX Records:</strong>
+                                        <ul class="list-unstyled mt-2">
+                                            <% result.checks.mx.records.forEach(record => { %>
+                                                <li class="small">
+                                                    <i class="fas fa-server me-1"></i>
+                                                    <%= record.exchange %> (Priority: <%= record.priority %>)
+                                                </li>
+                                            <% }) %>
+                                        </ul>
+                                    </div>
+                                <% } %>
+                                <% if (result.checks.smtp && result.checks.smtp.response) { %>
+                                    <div class="mb-3">
+                                        <strong>SMTP Response:</strong>
+                                        <pre class="small mt-2" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 5px; max-height: 150px; overflow-y: auto;"><%= result.checks.smtp.response %></pre>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="execution-time">
+                            <i class="fas fa-clock me-2"></i>
+                            Validation completed in <strong><%= result.executionTime %>ms</strong>
+                        </div>
+                    </div>
+                <% } %>
+                <!-- Batch Validation Section -->
+                <div class="batch-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-layer-group me-2"></i>Batch Validation
+                    </h4>
+                    <p class="text-muted">Validate multiple emails at once (comma-separated or newline-separated)</p>
+                    <form id="batchForm">
+                        <div class="mb-3">
+                            <textarea 
+                                class="form-control" 
+                                id="batchEmails" 
+                                rows="3" 
+                                placeholder="email1@example.com, email2@example.com, email3@example.com or one per line"
+                            ></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-validate text-white">
+                            <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                            <i class="fas fa-layer-group me-2"></i>Validate Batch
+                        </button>
+                    </form>
+                    <div id="batchResults" class="batch-results"></div>
+                </div>
+                <!-- File Upload Validation Section -->
+                <div class="file-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-file-upload me-2"></i>Upload Email File
+                    </h4>
+                    <p class="text-muted">Upload a .txt or .csv file containing emails (one per line or comma-separated)</p>
+                    <form id="fileForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="emailFile" name="emailFile" accept=".txt,.csv" required />
+                        </div>
+                        <button type="submit" class="btn btn-validate text-white">
+                            <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                            <i class="fas fa-file-import me-2"></i>Upload & Validate
+                        </button>
+                    </form>
+                    <div id="fileResults" class="file-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Single email form loading state
+        document.getElementById('emailForm').addEventListener('submit', function() {
+            const loading = this.querySelector('.loading');
+            const btn = this.querySelector('button[type="submit"]');
+            loading.classList.add('show');
+            btn.disabled = true;
+        });
+        // Batch validation
+        document.getElementById('batchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const loading = this.querySelector('.loading');
+            const btn = this.querySelector('button[type="submit"]');
+            const emails = document.getElementById('batchEmails').value.trim();
+            const resultsContainer = document.getElementById('batchResults');
+            if (!emails) {
+                alert('Please enter some email addresses');
+                return;
+            }
+            loading.classList.add('show');
+            btn.disabled = true;
+            resultsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Validating emails...</p></div>';
+            try {
+                const response = await fetch('/validate-bulk', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'emails=' + encodeURIComponent(emails)
+                });
+                const data = await response.json();
+                if (data.error) {
+                    resultsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else if (data.results && data.results.valid !== undefined) {
+                    displayBatchResults(data.results);
+                } else if (data.results && Array.isArray(data.results)) {
+                    displayBatchResults(data.results);
+                }
+            } catch (error) {
+                resultsContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('show');
+                btn.disabled = false;
+            }
+        });
+        function displayBatchResults(results) {
+            const container = document.getElementById('batchResults');
+            const length = Array.isArray(results) ? results.length : results.total;
+            const validCount = Array.isArray(results) ? results.filter(r => r.isValid).length : results.valid.length;
+            let html = `
+                <div class="alert alert-info">
+                    <strong>Batch Results:</strong> ${validCount}/${length} emails are valid
+                </div>
+            `;
+            const items = Array.isArray(results) ? results : [...results.valid, ...results.invalid.map(r => r)];
+            (Array.isArray(results) ? results : [...results.valid, ...results.invalid]).forEach((result) => {
+                const statusClass = result.isValid ? 'valid' : 'invalid';
+                const statusIcon = result.isValid ? 'fa-check-circle text-success' : 'fa-times-circle text-danger';
+                const failedChecks = Object.entries(result.checks)
+                    .filter(([_, details]) => !details.passed)
+                    .map(([check, _]) => check);
+                html += `
+                    <div class="batch-item ${statusClass}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas ${statusIcon} me-2"></i>
+                                    ${result.email}
+                                </h6>
+                                ${failedChecks.length > 0 ? 
+                                    `<small class="text-muted">Failed: ${failedChecks.join(', ')}</small>` : 
+                                    '<small class="text-success">All checks passed</small>'
+                                }
+                            </div>
+                            <small class="text-muted">${result.executionTime}ms</small>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+        // File upload validation
+        document.getElementById('fileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const loading = this.querySelector('.loading');
+            const btn = this.querySelector('button[type="submit"]');
+            const fileInput = document.getElementById('emailFile');
+            const resultsContainer = document.getElementById('fileResults');
+            if (!fileInput.files.length) {
+                alert('Please select a file');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('emailFile', fileInput.files[0]);
+            loading.classList.add('show');
+            btn.disabled = true;
+            resultsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Uploading and validating...</p></div>';
+            try {
+                const response = await fetch('/validate-file', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.error) {
+                    resultsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else if (data.results) {
+                    displayBatchResults(data.results.valid.concat(data.results.invalid));
+                }
+            } catch (error) {
+                resultsContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('show');
+                btn.disabled = false;
+                fileInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
